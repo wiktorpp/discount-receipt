@@ -1,3 +1,7 @@
+from os.path import dirname
+from datetime import datetime
+from os import mkdir
+
 class Product:
     def __init__(
         self, 
@@ -12,7 +16,14 @@ class Product:
         self.discount_percentage = discount_percentage
     
     def __repr__(self) -> str:
-        return f"Product({name}, {discount_percentage}, {starting_price}, {final_price})"
+        starting_price = f"{str(self.starting_price)[:-2]}_{str(self.starting_price)[-2:]}"
+        final_price = f"{str(self.final_price)[:-2]}_{str(self.final_price)[-2:]}"
+        return f"Product({self.name}, {self.discount_percentage}, {starting_price}, {final_price})"
+    
+    def to_csv(self):
+        starting_price = f"{str(self.starting_price)[:-2]}_{str(self.starting_price)[-2:]}"
+        final_price = f"{str(self.final_price)[:-2]}_{str(self.final_price)[-2:]}"
+        return f"{self.name};{self.discount_percentage};{self.starting_price};{final_price}"
 
 code_to_product = {
     1: Product("Złoto", 10),
@@ -20,15 +31,16 @@ code_to_product = {
 }
 
 receipt_header = "Zloty kolczyk\n<ulica>\nTel. <numer>\n--------------------------------\n"
-receipt_footer = "--------------------------------\n      Zapraszamy ponownie"
+receipt_footer = "--------------------------------\n      Zapraszamy ponownie\n"
 
 
 
-def generate_receipt(products, preview=False):
+def generate_receipt(products, date="", preview=False):
     receipt=receipt_header
     for index, product in enumerate(purchased_products):
+        receipt += f"Rabat {date}\n"
         if preview:
-            receipt += f"Nr. {index}"
+            receipt += f"Nr. {index}\n"
         starting_price=f"{str(product.starting_price)[:-2]}.{str(product.starting_price)[-2:]}"
         discount_percentage = str(product.discount_percentage)
         if discount_percentage == "0":
@@ -42,29 +54,47 @@ def generate_receipt(products, preview=False):
     receipt += receipt_footer
     return receipt
 
+def print_receipt(receipt, date):
+    filename = date.replace(" ", "_") + ".txt"
+    try:
+        mkdir(f"{dirname(__file__)}/autoprint/")
+    except:
+        pass
+    with open(f"{dirname(__file__)}/autoprint/{filename}", "w+") as file:
+        file.write(receipt)
 
-
+def save_logs(products, date):
+    out = ""
+    for product in products:
+        out += product.to_csv() + "\n"
+    filename = date.replace(" ", "_") + ".csv"
+    try:
+        mkdir(f"{dirname(__file__)}/logs/")
+    except:
+        pass
+    with open(f"{dirname(__file__)}/logs/{filename}", "w+") as file:
+        file.write(out)
 
 purchased_products = []
 while True:
     print(
-        "Add product - 1\n"
-        "Remove product - 2\n"
-        "Clear - 3\n"
-        "Save and print - 4"
+        "1. Add product - 1\n"
+        "2. Remove product - 2\n"
+        "3. Clear - 3\n"
+        "4. Save and print - 4"
     )
     # print(
-    #     "Dodaj produkt - puste\n"
-    #     "Usuń produkt - 1\n"
-    #     "Wyczyść - 2\n"
-    #     "Zapisz i drukuj - 3"
+    #     "1. Dodaj produkt\n"
+    #     "2. Usuń produkt\n"
+    #     "3. Wyczyść\n"
+    #     "4. Zapisz i drukuj"
     # )
-    option = input(">")
+    option = input("#> ")
     if option == "1":
         print("Enter product code or custom name")
         # print("Wpisz kod lub niestandardową nazwę")
         while True:
-            code_or_name = input(">")
+            code_or_name = input("@> ")
             try: 
                 code = int(code_or_name)
                 product = code_to_product[code]
@@ -81,9 +111,22 @@ while True:
                 name = product.name
                 discount_percentage = product.discount_percentage
                 break
-        print("Enter discount")
         while True:
-            value = input(f"{discount_percentage}%>")
+            print("Enter starting price")
+            # print("Wpisz cenę początkową")
+            try:
+                starting_price = input("zł> ")
+                if "." in starting_price or "," in starting_price or "-" in starting_price:
+                    starting_price = int(starting_price[:-3] + starting_price[-2:])
+                else:
+                    starting_price = int(f"{starting_price}00")
+            except ValueError:
+                print("Invalid price")
+            else:
+                break
+        while True:
+            print("Enter discount")
+            value = input(f"{discount_percentage}%> ")
             if value != "":
                 try:
                     discount_percentage = int(value)
@@ -93,30 +136,49 @@ while True:
                     break
             else:
                 break
+        final_price = int(starting_price*(1-(discount_percentage/100)))
         while True:
-            print("Enter starting price")
-            # print("Wpisz cenę początkową")
-            try:
-                starting_price = input(">")
-                if "." in starting_price or "," in starting_price:
-                    starting_price = int(starting_price[:-3] + starting_price[-2:])
+            print("Enter final price")
+            value = input(f"{str(final_price)[:-2]}.{str(final_price)[-2:]}zł> ")
+            if value != "":
+                try:
+                    if "." in value or "," in value:
+                        final_price = int(value[:-3] + value[-2:])
+                    else:
+                        final_price = int(f"{value}00")
+                except ValueError:
+                    print("Invalid value")
                 else:
-                    starting_price = int(f"{starting_price}00")
-            except ValueError:
-                print("Invalid price")
+                    break
             else:
                 break
-        final_price = int(starting_price*(1-(discount_percentage/100)))
         purchased_products.append(Product(name, discount_percentage, starting_price, final_price))
+        print(purchased_products)
+    elif option == "2":
+        print(generate_receipt(purchased_products, preview=True))
+        try:
+            index=int(input("@> "))
+        except ValueError:
+            print("Invalid index")
+        else:
+            purchased_products.pop(index)
+    elif option == "3":
+        print("Confirm")
+        if input("1> ") == "1":
+            purchased_products = []
+        else:
+            print("Cancelled")
     elif option == "4":
-        break
+        now = datetime.now()
+        receipt = generate_receipt(purchased_products, now.strftime("%d.%m.%Y %H:%M"))
+        print(receipt)
+        print("Confirm")
+        if input("1> ") == "1":
+            print_receipt(receipt, now.strftime("%d.%m.%Y %H:%M:%S"))
+            print("Printing...")
+            save_logs(purchased_products, now.strftime("%d.%m.%Y %H:%M:%S"))
+            purchased_products = []
+        else:
+            print("Cancelled")
     else:
         print("Invalid option")
-print(purchased_products)
-with open("log.svg", "a") as file:
-    pass
-    # TODO
-print("--------------------------WYDRUK------------------------")
-
-print(purchased_products)
-print(generate_receipt(purchased_products))
