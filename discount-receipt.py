@@ -1,6 +1,5 @@
-from os.path import dirname
 from datetime import datetime
-from os import mkdir
+from os import mkdir, getcwd
 
 class Product:
     def __init__(
@@ -55,24 +54,24 @@ def generate_receipt(products, date="", preview=False):
     return receipt
 
 def print_receipt(receipt, date):
-    filename = date.replace(" ", "_") + ".txt"
+    filename = date.replace(" ", "_").replace(":", "+") + ".txt"
     try:
-        mkdir(f"{dirname(__file__)}/autoprint/")
+        mkdir(f"{getcwd()}/receipts/")
     except:
         pass
-    with open(f"{dirname(__file__)}/autoprint/{filename}", "w+") as file:
+    with open(f"{getcwd()}/receipts/{filename}", "w+") as file:
         file.write(receipt)
 
 def save_logs(products, date):
     out = ""
     for product in products:
         out += product.to_csv() + "\n"
-    filename = date.replace(" ", "_") + ".csv"
+    filename = date.replace(" ", "_").replace(":", "+") + ".csv"
     try:
-        mkdir(f"{dirname(__file__)}/logs/")
+        mkdir(f"{getcwd()}/logs/")
     except:
         pass
-    with open(f"{dirname(__file__)}/logs/{filename}", "w+") as file:
+    with open(f"{getcwd()}/logs/{filename}", "w+") as file:
         file.write(out)
 
 purchased_products = []
@@ -153,7 +152,6 @@ while True:
             else:
                 break
         purchased_products.append(Product(name, discount_percentage, starting_price, final_price))
-        print(purchased_products)
     elif option == "2":
         print(generate_receipt(purchased_products, preview=True))
         try:
