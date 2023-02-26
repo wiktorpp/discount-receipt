@@ -1,6 +1,7 @@
-from datetime import datetime
-from os import mkdir, getcwd, listdir
 import socket
+from datetime import datetime
+from os import getcwd, listdir, mkdir
+
 
 class Product:
     def __init__(
@@ -27,7 +28,7 @@ class Product:
 
 code_to_product = {
     1: Product("Złoto", 10),
-    2: Product("Srebro")
+    2: Product("Srebro"),
 }
 
 receipt_header = "Zloty kolczyk\n<ulica>\nTel. <numer>\n--------------------------------\n"
@@ -62,7 +63,7 @@ def save_receipt_as_txt(receipt, filename):
         
 def print_receipt_network_printer(receipt):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect(("localhost",9100))
+    s.connect(("localhost", 9100))
     s.send(receipt.encode())
     s.close()
 
@@ -77,24 +78,16 @@ def save_logs(products, filename):
     with open(f"{getcwd()}/logs/{filename}", "w+") as file:
         file.write(out)
 
-purchased_products = []
-while True:
-    print(
-        "1. Add product\n"
-        "2. Remove product\n"
-        "3. Clear\n"
-        "4. Save and print\n"
-        "5. Print file"
-    )
-    # print(
-    #     "1. Dodaj produkt\n"
-    #     "2. Usuń produkt\n"
-    #     "3. Wyczyść\n"
-    #     "4. Zapisz i drukuj\n"
-    #     "5. Drukuj plik\n"
-    # )
-    option = input("#> ")
-    if option == "1":
+def enter_product_menu():
+        products = list(code_to_product.items())
+        for i in range(0, len(products), 2):
+            key, product = products[i]
+            print(f"{key:>3} {product.name:<19}", end="")
+            try:
+                key, product = products[i+1]
+                print(f"{key:>3} {product.name:<19}")
+            except:
+                print()
         print("Enter product code or custom name")
         # print("Wpisz kod lub niestandardową nazwę")
         while True:
@@ -162,8 +155,35 @@ while True:
                     break
             else:
                 break
-        purchased_products.append(Product(name, discount_percentage, starting_price, final_price))
+        return Product(name, discount_percentage, starting_price, final_price)
 
+    
+
+purchased_products = []
+while True:
+    print(
+        "1. Add product\n"
+        "2. Remove product\n"
+        "3. Clear\n"
+        "4. Save and print\n"
+        "5. Print file"
+    )
+    # print(
+    #     "1. Dodaj produkt\n"
+    #     "2. Usuń produkt\n"
+    #     "3. Wyczyść\n"
+    #     "4. Zapisz i drukuj\n"
+    #     "5. Drukuj plik\n"
+    # )
+    option = input("#> ")
+    if option == "1":
+        try:
+            product = enter_product_menu()
+        except RuntimeError:
+            print("Cancelled")
+            # print("Anulowano")
+        else:
+            purchased_products.append(product)
     elif option == "2":
         print(generate_receipt(purchased_products, preview=True))
         try:
@@ -172,20 +192,27 @@ while True:
             print("Invalid index")
             # print("Niepoprawna wartość")
         else:
-            purchased_products.pop(index)
+            if index == 0:
+                print("Cancelled")
+                # print("Anulowano")
+            else:
+                purchased_products.pop(index)
 
     elif option == "3":
         print("Confirm")
+        # print("Potwierdź")
         if input("1> ") == "1":
             purchased_products = []
         else:
             print("Cancelled")
-
+            # print("Anulowano")
+            
     elif option == "4":
         now = datetime.now()
         receipt = generate_receipt(purchased_products, now.strftime("%d.%m.%Y %H:%M"))
         print(receipt)
         print("Confirm")
+        # print("Potwierdź")
         if input("1> ") == "1":
             try:
                 print_receipt_network_printer(receipt)
