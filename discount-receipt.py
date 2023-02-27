@@ -88,10 +88,12 @@ def enter_product_menu():
                 print(f"{key:>3} {product.name:<19}")
             except:
                 print()
-        print("Enter product code or custom name")
-        # print("Wpisz kod lub niestandardową nazwę")
+        print("Enter product code or custom name (0 - Cancel)")
+        # print("Wpisz kod lub niestandardową nazwę (0 - Anuluj)")
         while True:
             code_or_name = input("@> ")
+            if code_or_name == "0":
+                raise RuntimeError
             try: 
                 code = int(code_or_name)
                 product = code_to_product[code]
@@ -111,10 +113,12 @@ def enter_product_menu():
                 discount_percentage = product.discount_percentage
                 break
         while True:
-            print("Enter starting price")
-            # print("Wpisz cenę początkową")
+            print("Enter starting price (0 - Cancel)")
+            # print("Wpisz cenę początkową (0 - Anuluj)")
             try:
                 starting_price = input("zł> ")
+                if starting_price == "0":
+                    raise RuntimeError
                 if "." in starting_price or "," in starting_price or "-" in starting_price:
                     starting_price = int(starting_price[:-3] + starting_price[-2:])
                 else:
@@ -140,8 +144,11 @@ def enter_product_menu():
                 break
         final_price = int(starting_price*(1-(discount_percentage/100)))
         while True:
-            print("Enter final price")
+            print("Enter final price (0 - Cancel)")
+            # print("Wpisz cenę końcową (0 - Anuluj)")
             value = input(f"{str(final_price)[:-2]}.{str(final_price)[-2:]}zł> ")
+            if value == "0":
+                raise RuntimeError
             if value != "":
                 try:
                     if "." in value or "," in value:
