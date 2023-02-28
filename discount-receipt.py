@@ -2,6 +2,10 @@ import socket
 from datetime import datetime
 from os import getcwd, listdir, mkdir
 
+receipt_header = "Zloty kolczyk\n<ulica>\nTel. <numer>\n--------------------------------\n"
+receipt_footer = "--------------------------------\n      Zapraszamy ponownie\n"
+
+printer_ip = ("localhost", 9100)
 
 class Product:
     def __init__(
@@ -15,7 +19,7 @@ class Product:
         self.starting_price = starting_price
         self.final_price = final_price
         self.discount_percentage = discount_percentage
-    
+
     def __repr__(self) -> str:
         starting_price = f"{str(self.starting_price)[:-2]}_{str(self.starting_price)[-2:]}"
         final_price = f"{str(self.final_price)[:-2]}_{str(self.final_price)[-2:]}"
@@ -30,10 +34,6 @@ code_to_product = {
     1: Product("Złoto", 10),
     2: Product("Srebro"),
 }
-
-receipt_header = "Zloty kolczyk\n<ulica>\nTel. <numer>\n--------------------------------\n"
-receipt_footer = "--------------------------------\n      Zapraszamy ponownie\n"
-
 def generate_receipt(products, date="", preview=False):
     receipt=receipt_header
     for index, product in enumerate(purchased_products):
@@ -162,64 +162,74 @@ def enter_product_menu():
                     break
             else:
                 break
-        return Product(name, discount_percentage, starting_price, final_price)
+        return Product(
+            name, 
+            discount_percentage, 
+            starting_price, 
+            final_price
+        )
 
     
-
-purchased_products = []
-while True:
-    print(
-        "1. Add product\n"
-        "2. Remove product\n"
-        "3. Clear\n"
-        "4. Save and print\n"
-        "5. Print file"
-    )
-    # print(
-    #     "1. Dodaj produkt\n"
-    #     "2. Usuń produkt\n"
-    #     "3. Wyczyść\n"
-    #     "4. Zapisz i drukuj\n"
-    #     "5. Drukuj plik\n"
-    # )
-    option = input("#> ")
-    if option == "1":
-        try:
-            product = enter_product_menu()
-        except RuntimeError:
-            print("Cancelled")
-            # print("Anulowano")
-        else:
-            purchased_products.append(product)
-    elif option == "2":
-        print(generate_receipt(purchased_products, preview=True))
-        try:
-            index=int(input("@> "))
-        except ValueError:
-            print("Invalid index")
-            # print("Niepoprawna wartość")
-        else:
-            if index == 0:
+if __name__ == "__main__":
+    purchased_products = []
+    while True:
+        print(
+            "1. Add product\n"
+            "2. Remove product\n"
+            "3. Clear\n"
+            "4. Save and print\n"
+            "5. Print file\n"
+            "6. Print text"
+        )
+        # print(
+        #     "1. Dodaj produkt\n"
+        #     "2. Usuń produkt\n"
+        #     "3. Wyczyść\n"
+        #     "4. Zapisz i drukuj\n"
+        #     "5. Drukuj plik\n"
+        #     "6. Drukuj tekst"
+        # )
+        option = input("#> ")
+        if option == "1":
+            try:
+                product = enter_product_menu()
+            except RuntimeError:
                 print("Cancelled")
                 # print("Anulowano")
             else:
-                purchased_products.pop(index)
+                purchased_products.append(product)
+        elif option == "2":
+            print(generate_receipt(purchased_products, preview=True))
+            try:
+                index=int(input("@> "))
+            except ValueError:
+                print("Invalid index")
+                # print("Niepoprawna wartość")
+            else:
+                if index == 0:
+                    print("Cancelled")
+                    # print("Anulowano")
+                else:
+                    purchased_products.pop(index)
 
-    elif option == "3":
-        print("Confirm")
-        # print("Potwierdź")
-        if input("1> ") == "1":
-            purchased_products = []
-        else:
-            print("Cancelled")
-            # print("Anulowano")
-            
-    elif option == "4":
-        now = datetime.now()
-        receipt = generate_receipt(purchased_products, now.strftime("%d.%m.%Y %H:%M"))
-        print(receipt)
-        print("Confirm")
-        # print("Potwierdź")
+        elif option == "3":
+            print("Confirm")
+            # print("Potwierdź")
+            if input("1> ") == "1":
+                purchased_products = []
+            else:
+                print("Cancelled")
+                # print("Anulowano")
+                
+        elif option == "4":
+            now = datetime.now()
+            receipt = generate_receipt(
+                purchased_products, 
+                now.strftime("%d.%m.%Y %H:%M")
+            )
+            print(receipt)
+            print("Confirm")
+            # print("Potwierdź")
         if input("1> ") == "1":
             try:
                 print_receipt_network_printer(receipt)
@@ -233,30 +243,40 @@ while True:
             save_receipt_as_txt(receipt, filename + ".txt")
             save_logs(purchased_products, filename + ".csv")
             purchased_products = []
-        else:
-            print("Cancelled")
-            # print("Anulowano")
-
-    elif option == "5":
-        try:
-            dir = f"{getcwd()}/receipts/"
-            files = listdir(dir)
-        except FileNotFoundError:
-            print(f"Directory doesn't exist: {dir}")
-            # print(f"Folder nie istnieje: {dir}")
-        else:
-            for index, file in enumerate(files):
-                print(f"{index}. {file}")
-            try:
-                index = int(input("@>"))
-            except ValueError:
-                print("Invalid value")
-                # print("Niepoprawna wartość")
             else:
-                receipt = open(dir + files[index]).read()
-                print(receipt)
-                print_receipt_network_printer(receipt)       
+                print("Cancelled")
+                # print("Anulowano")
 
-    else:
-        print("Invalid option")
-        # print("Niepoprawna opcja")
+        elif option == "5":
+            try:
+                dir = f"{getcwd()}/receipts/"
+                files = listdir(dir)
+            except FileNotFoundError:
+                print(f"Directory doesn't exist: {dir}")
+                # print(f"Folder nie istnieje: {dir}")
+            else:
+                for index, file in enumerate(files):
+                    print(f"{index}. {file}")
+                try:
+                    index = int(input("@>"))
+                except ValueError:
+                    print("Invalid value")
+                    # print("Niepoprawna wartość")
+                else:
+                    receipt = open(dir + files[index]).read()
+                    print(receipt)
+                    print_receipt_network_printer(receipt)       
+        
+        elif option == "6":
+            receipt = ""
+            while True:
+                line = input()
+                if line == "":
+                    break
+                else:
+                    receipt += f"{line}/n"
+            print_receipt_network_printer(receipt)
+        
+        else:
+            print("Invalid option")
+            # print("Niepoprawna opcja")
