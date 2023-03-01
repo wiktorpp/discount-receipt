@@ -34,6 +34,7 @@ code_to_product = {
     1: Product("Złoto", 10),
     2: Product("Srebro"),
 }
+    
 def generate_receipt(products, date="", preview=False):
     receipt=receipt_header
     for index, product in enumerate(purchased_products):
@@ -62,10 +63,17 @@ def save_receipt_as_txt(receipt, filename):
         file.write(receipt)
         
 def print_receipt_network_printer(receipt):
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect(("localhost", 9100))
-    s.send(receipt.encode())
-    s.close()
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect(printer_ip)
+        s.send(receipt.encode() + bytes(16))
+        s.close()
+    except:
+        print("Printing error")
+        # print("Błąd drukowania")
+    else:
+        print("Printing...")
+        # print("Drukowanie...")
 
 def save_logs(products, filename):
     out = ""
@@ -122,7 +130,7 @@ def enter_product_menu():
                 if "." in starting_price or "," in starting_price or "-" in starting_price:
                     starting_price = int(starting_price[:-3] + starting_price[-2:])
                 else:
-                    starting_price = int(f"{starting_price}00")
+                    starting_price = int(f"{int(starting_price)}00")
             except ValueError:
                 print("Invalid price")
                 # print("Niepoprawna cena")
@@ -230,19 +238,12 @@ if __name__ == "__main__":
             print(receipt)
             print("Confirm")
             # print("Potwierdź")
-        if input("1> ") == "1":
-            try:
+            if input("1> ") == "1":
                 print_receipt_network_printer(receipt)
-            except:
-                print("Printing error")
-                # print("Błąd drukowania")
-            else:
-                print("Printing...")
-                # print("Drukowanie...")
-            filename = now.strftime("%d_%m_%Y__%H_%M_%S")
-            save_receipt_as_txt(receipt, filename + ".txt")
-            save_logs(purchased_products, filename + ".csv")
-            purchased_products = []
+                filename = now.strftime("%d_%m_%Y__%H_%M_%S")
+                save_receipt_as_txt(receipt, filename + ".txt")
+                save_logs(purchased_products, filename + ".csv")
+                purchased_products = []
             else:
                 print("Cancelled")
                 # print("Anulowano")
