@@ -30,10 +30,19 @@ class Product:
         final_price = f"{str(self.final_price)[:-2]}_{str(self.final_price)[-2:]}"
         return f"{self.name};{self.discount_percentage};{self.starting_price};{final_price}"
 
-code_to_product = {
-    1: Product("Złoto", 10),
-    2: Product("Srebro"),
-}
+code_to_product = dict()
+svg = open("products.csv").read()
+for product in svg.splitlines():
+    code, name, discount_percentage = product.split(",")
+    try:
+        code_to_product[code] = Product(
+            name, 
+            int(discount_percentage)
+        )
+    except:
+        code_to_product[code] = Product(
+            name
+        )
     
 def generate_receipt(products, date="", preview=False):
     receipt=receipt_header
