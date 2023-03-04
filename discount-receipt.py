@@ -2,17 +2,17 @@ import socket
 from datetime import datetime
 from os import getcwd, listdir, mkdir
 
-receipt_header = "Zloty kolczyk\n<ulica>\nTel. <numer>\n--------------------------------\n"
-receipt_footer = "--------------------------------\n      Zapraszamy ponownie\n"
+receipt_header = "Zloty kolczyk\nUl. Henryka Sienkiewicza 30\nTel. 41-343-78-69\n--------------------------------\n"
+receipt_footer = "       Zapraszamy ponownie\n"
 
 printer_ip = ("localhost", 9100)
 
 class Product:
     def __init__(
-        self, 
-        name = None, 
+        self,
+        name = None,
         discount_percentage = 0,
-        starting_price = None, 
+        starting_price = None,
         final_price = None
     ):
         self.name = name
@@ -24,7 +24,7 @@ class Product:
         starting_price = f"{str(self.starting_price)[:-2]}_{str(self.starting_price)[-2:]}"
         final_price = f"{str(self.final_price)[:-2]}_{str(self.final_price)[-2:]}"
         return f"Product({self.name}, {self.discount_percentage}, {starting_price}, {final_price})"
-    
+
     def to_csv(self):
         starting_price = f"{str(self.starting_price)[:-2]}_{str(self.starting_price)[-2:]}"
         final_price = f"{str(self.final_price)[:-2]}_{str(self.final_price)[-2:]}"
@@ -37,7 +37,7 @@ for product in svg.splitlines():
         code, name, discount_percentage = product.split(",")
         try:
             code_to_product[int(code)] = Product(
-                name, 
+                name,
                 int(discount_percentage)
             )
         except ValueError:
@@ -46,23 +46,34 @@ for product in svg.splitlines():
             )
     except ValueError:
         pass
-    
+
 def generate_receipt(products, date="", preview=False):
     receipt=receipt_header
-    for index, product in enumerate(purchased_products):
-        receipt += f"Rabat {date}\n"
+    starting_price_sum = 0
+    difference_sum = 0
+    final_price_sum = 0
+    receipt += f"Rabat {date}\n"
+    for index, product in enumerate(products):
         if preview:
             receipt += f"Nr. {index}\n"
         starting_price=f"{str(product.starting_price)[:-2]}.{str(product.starting_price)[-2:]}"
+        starting_price_sum += product.starting_price
         discount_percentage = str(product.discount_percentage)
         if discount_percentage == "0":
             difference = "-0.00"
         else:
-            difference = str(product.final_price - product.starting_price)
-            difference = f"{difference[:-2]}.{difference[-2:]}"
+            difference = product.starting_price - product.final_price
+            difference_sum += difference
+            difference = f"-{str(difference)[:-2]}.{str(difference)[-2:]}"
         final_price = f"{str(product.final_price)[:-2]}.{str(product.final_price)[-2:]}"
+        final_price_sum += product.final_price
         receipt += f"{product.name:<19}{'~' + discount_percentage:>4}%\n"
         receipt += f"         {starting_price:>7} {difference:>7} {'~' + final_price:>7}\n"
+    receipt += "--------------------------------\n"
+    starting_price_sum = f"{str(starting_price_sum)[:-2]}.{str(starting_price_sum)[-2:]}"
+    difference_sum = f"{str(difference_sum)[:-2]}.{str(difference_sum)[-2:]}"
+    final_price_sum = f"{str(final_price_sum)[:-2]}.{str(final_price_sum)[-2:]}"
+    receipt += f"Suma:    {starting_price_sum:>7} {'-' + difference_sum:>7} {final_price_sum:>7}\n"
     receipt += receipt_footer
     return receipt
 
@@ -73,7 +84,7 @@ def save_receipt_as_txt(receipt, filename):
         pass
     with open(f"{getcwd()}/printed/{filename}", "w+") as file:
         file.write(receipt)
-        
+
 def print_receipt_network_printer(receipt):
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -81,8 +92,8 @@ def print_receipt_network_printer(receipt):
         s.send(receipt.encode() + bytes(16))
         s.close()
     except:
-        print("Printing error")
-        # print("Błąd drukowania")
+        print("\033[31mPrinting error\033[39m")
+        # print("\033[31mBłąd drukowania\033[39m")
     else:
         print("Printing...")
         # print("Drukowanie...")
@@ -114,20 +125,20 @@ def enter_product_menu():
             code_or_name = input("@> ")
             if code_or_name == "0":
                 raise RuntimeError
-            try: 
+            try:
                 code = int(code_or_name)
                 product = code_to_product[code]
             except ValueError:
                 name = code_or_name
                 discount_percentage = 0
                 if len(name) == 0:
-                    print("Can't be empty")
-                    # print("Nie może być puste")
+                    print("\033[31mCan't be empty\033[39m")
+                    # print("\033[31mNie może być puste\033[39m")
                 else:
                     break
             except KeyError:
-                print("Invalid code")
-                # print("Niepoprawny kod")
+                print("\033[31mInvalid code\033[39m")
+                # print("\033[31mNiepoprawny kod\033[39m")
             else:
                 name = product.name
                 discount_percentage = product.discount_percentage
@@ -144,20 +155,22 @@ def enter_product_menu():
                 else:
                     starting_price = int(f"{int(starting_price)}00")
             except ValueError:
-                print("Invalid price")
-                # print("Niepoprawna cena")
+                print("\033[31mInvalid price\033[39m")
+                # print("\033[31mNiepoprawna cena\033[39m")
             else:
                 break
         while True:
-            print("Enter discount")
-            # Print("Wpisz zniszkę")
+            print("Enter discount (0 - Cancel)")
+            # Print("Wpisz zniszkę (0 - Anuluj)")
             value = input(f"{discount_percentage}%> ")
+            if value == "0":
+                raise RuntimeError
             if value != "":
                 try:
                     discount_percentage = int(value)
                 except ValueError:
-                    print("Invalid value")
-                    # print("Niepoprawna wartość")
+                    print("\033[31mInvalid value\033[39m")
+                    # print("\033[31mNiepoprawna wartość\033[39m")
                 else:
                     break
             else:
@@ -176,20 +189,20 @@ def enter_product_menu():
                     else:
                         final_price = int(f"{value}00")
                 except ValueError:
-                    print("Invalid value")
-                    # print("Niepoprawna wartość")
+                    print("\033[31mInvalid value\033[39m")
+                    # print("\033[31mNiepoprawna wartość\033[39m")
                 else:
                     break
             else:
                 break
         return Product(
-            name, 
-            discount_percentage, 
-            starting_price, 
+            name,
+            discount_percentage,
+            starting_price,
             final_price
         )
 
-    
+
 if __name__ == "__main__":
     purchased_products = []
     while True:
@@ -223,8 +236,8 @@ if __name__ == "__main__":
             try:
                 index=int(input("@> "))
             except ValueError:
-                print("Invalid index")
-                # print("Niepoprawna wartość")
+                print("\033[31mInvalid index\033[39m")
+                # print("N\033[31miepoprawna wartość\033[39m")
             else:
                 if index == 0:
                     print("Cancelled")
@@ -240,7 +253,7 @@ if __name__ == "__main__":
             else:
                 print("Cancelled")
                 # print("Anulowano")
-                
+
         elif option == "4":
             now = datetime.now()
             receipt = generate_receipt(
@@ -278,8 +291,8 @@ if __name__ == "__main__":
                 else:
                     receipt = open(dir + files[index]).read()
                     print(receipt)
-                    print_receipt_network_printer(receipt)       
-        
+                    print_receipt_network_printer(receipt)
+
         elif option == "6":
             receipt = ""
             while True:
@@ -287,9 +300,9 @@ if __name__ == "__main__":
                 if line == "":
                     break
                 else:
-                    receipt += f"{line}/n"
+                    receipt += f"{line}\n"
             print_receipt_network_printer(receipt)
-        
+
         else:
-            print("Invalid option")
-            # print("Niepoprawna opcja")
+            print("\033[31mInvalid option\033[39m")
+            # print("\033[31mNiepoprawna opcja\033[39m")
