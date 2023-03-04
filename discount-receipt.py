@@ -89,7 +89,11 @@ def print_receipt_network_printer(receipt):
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect(printer_ip)
-        s.send(receipt.encode() + bytes(16))
+        try:
+            data = receipt.encode() + bytes(16)
+        except:
+            data = receipt
+        s.send(data)
         s.close()
     except:
         print("\033[31mPrinting error\033[39m")
@@ -110,97 +114,97 @@ def save_logs(products, filename):
         file.write(out)
 
 def enter_product_menu():
-        products = list(code_to_product.items())
-        for i in range(0, len(products), 2):
-            key, product = products[i]
-            print(f"{key:>3} {product.name:<19}", end="")
-            try:
-                key, product = products[i+1]
-                print(f"{key:>3} {product.name:<19}")
-            except:
-                print()
+    products = list(code_to_product.items())
+    for i in range(0, len(products), 2):
+        key, product = products[i]
+        print(f"{key:>3} {product.name:<19}", end="")
+        try:
+            key, product = products[i+1]
+            print(f"{key:>3} {product.name:<19}")
+        except:
+            print()
+    while True:
         print("Enter product code or custom name (0 - Cancel)")
         # print("Wpisz kod lub niestandardową nazwę (0 - Anuluj)")
-        while True:
-            code_or_name = input("@> ")
-            if code_or_name == "0":
+        code_or_name = input("@> ")
+        if code_or_name == "0":
+            raise RuntimeError
+        try:
+            code = int(code_or_name)
+            product = code_to_product[code]
+        except ValueError:
+            name = code_or_name
+            discount_percentage = 0
+            if len(name) == 0:
+                print("\033[31mCan't be empty\033[39m")
+                # print("\033[31mNie może być puste\033[39m")
+            else:
+                break
+        except KeyError:
+            print("\033[31mInvalid code\033[39m")
+            # print("\033[31mNiepoprawny kod\033[39m")
+        else:
+            name = product.name
+            discount_percentage = product.discount_percentage
+            break
+    while True:
+        print("Enter starting price (0 - Cancel)")
+        # print("Wpisz cenę początkową (0 - Anuluj)")
+        try:
+            starting_price = input("zł> ")
+            if starting_price == "0":
                 raise RuntimeError
+            if "." in starting_price or "," in starting_price or "-" in starting_price:
+                starting_price = int(starting_price[:-3] + starting_price[-2:])
+            else:
+                starting_price = int(f"{int(starting_price)}00")
+        except ValueError:
+            print("\033[31mInvalid price\033[39m")
+            # print("\033[31mNiepoprawna cena\033[39m")
+        else:
+            break
+    while True:
+        print("Enter discount (0 - Cancel)")
+        # Print("Wpisz zniszkę (0 - Anuluj)")
+        value = input(f"{discount_percentage}%> ")
+        if value == "0":
+            raise RuntimeError
+        if value != "":
             try:
-                code = int(code_or_name)
-                product = code_to_product[code]
+                discount_percentage = int(value)
             except ValueError:
-                name = code_or_name
-                discount_percentage = 0
-                if len(name) == 0:
-                    print("\033[31mCan't be empty\033[39m")
-                    # print("\033[31mNie może być puste\033[39m")
-                else:
-                    break
-            except KeyError:
-                print("\033[31mInvalid code\033[39m")
-                # print("\033[31mNiepoprawny kod\033[39m")
+                print("\033[31mInvalid value\033[39m")
+                # print("\033[31mNiepoprawna wartość\033[39m")
             else:
-                name = product.name
-                discount_percentage = product.discount_percentage
                 break
-        while True:
-            print("Enter starting price (0 - Cancel)")
-            # print("Wpisz cenę początkową (0 - Anuluj)")
+        else:
+            break
+    final_price = int(starting_price*(1-(discount_percentage/100)))
+    while True:
+        print("Enter final price (0 - Cancel)")
+        # print("Wpisz cenę końcową (0 - Anuluj)")
+        value = input(f"{str(final_price)[:-2]}.{str(final_price)[-2:]}zł> ")
+        if value == "0":
+            raise RuntimeError
+        if value != "":
             try:
-                starting_price = input("zł> ")
-                if starting_price == "0":
-                    raise RuntimeError
-                if "." in starting_price or "," in starting_price or "-" in starting_price:
-                    starting_price = int(starting_price[:-3] + starting_price[-2:])
+                if "." in value or "," in value:
+                    final_price = int(value[:-3] + value[-2:])
                 else:
-                    starting_price = int(f"{int(starting_price)}00")
+                    final_price = int(f"{value}00")
             except ValueError:
-                print("\033[31mInvalid price\033[39m")
-                # print("\033[31mNiepoprawna cena\033[39m")
+                print("\033[31mInvalid value\033[39m")
+                # print("\033[31mNiepoprawna wartość\033[39m")
             else:
                 break
-        while True:
-            print("Enter discount (0 - Cancel)")
-            # Print("Wpisz zniszkę (0 - Anuluj)")
-            value = input(f"{discount_percentage}%> ")
-            if value == "0":
-                raise RuntimeError
-            if value != "":
-                try:
-                    discount_percentage = int(value)
-                except ValueError:
-                    print("\033[31mInvalid value\033[39m")
-                    # print("\033[31mNiepoprawna wartość\033[39m")
-                else:
-                    break
-            else:
-                break
-        final_price = int(starting_price*(1-(discount_percentage/100)))
-        while True:
-            print("Enter final price (0 - Cancel)")
-            # print("Wpisz cenę końcową (0 - Anuluj)")
-            value = input(f"{str(final_price)[:-2]}.{str(final_price)[-2:]}zł> ")
-            if value == "0":
-                raise RuntimeError
-            if value != "":
-                try:
-                    if "." in value or "," in value:
-                        final_price = int(value[:-3] + value[-2:])
-                    else:
-                        final_price = int(f"{value}00")
-                except ValueError:
-                    print("\033[31mInvalid value\033[39m")
-                    # print("\033[31mNiepoprawna wartość\033[39m")
-                else:
-                    break
-            else:
-                break
-        return Product(
-            name,
-            discount_percentage,
-            starting_price,
-            final_price
-        )
+        else:
+            break
+    return Product(
+        name,
+        discount_percentage,
+        starting_price,
+        final_price
+    )
 
 
 if __name__ == "__main__":
@@ -289,7 +293,7 @@ if __name__ == "__main__":
                     print("Invalid value")
                     # print("Niepoprawna wartość")
                 else:
-                    receipt = open(dir + files[index]).read()
+                    receipt = open(dir + files[index], "rb").read()
                     print(receipt)
                     print_receipt_network_printer(receipt)
 
