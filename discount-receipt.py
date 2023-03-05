@@ -47,6 +47,17 @@ for product in svg.splitlines():
     except ValueError:
         pass
 
+def add_decimal(integer):
+    return f"{str(integer)[:-2]}.{str(integer)[-2:]}"
+
+def remove_decimal(number):
+    if number == "0":
+        raise RuntimeError
+    if "." in number or "," in number or "-" in number:
+        return int(number[:-3] + number[-2:])
+    else:
+        return int(f"{int(number)}00")
+
 def generate_receipt(products, date="", preview=False):
     receipt=receipt_header
     starting_price_sum = 0
@@ -55,24 +66,24 @@ def generate_receipt(products, date="", preview=False):
     receipt += f"Rabat {date}\n"
     for index, product in enumerate(products):
         if preview:
-            receipt += f"Nr. {index}\n"
-        starting_price=f"{str(product.starting_price)[:-2]}.{str(product.starting_price)[-2:]}"
+            receipt += f"            Nr. {index}\n"
+        starting_price = add_decimal(product.starting_price)
         starting_price_sum += product.starting_price
         discount_percentage = str(product.discount_percentage)
+        receipt += f"{product.name:<19}{'~' + discount_percentage:>4}%\n"
         if discount_percentage == "0":
             difference = "-0.00"
         else:
             difference = product.starting_price - product.final_price
             difference_sum += difference
-            difference = f"-{str(difference)[:-2]}.{str(difference)[-2:]}"
-        final_price = f"{str(product.final_price)[:-2]}.{str(product.final_price)[-2:]}"
+            difference = add_decimal(difference)
         final_price_sum += product.final_price
-        receipt += f"{product.name:<19}{'~' + discount_percentage:>4}%\n"
+        final_price = add_decimal(product.final_price)
         receipt += f"         {starting_price:>7} {difference:>7} {'~' + final_price:>7}\n"
     receipt += "--------------------------------\n"
-    starting_price_sum = f"{str(starting_price_sum)[:-2]}.{str(starting_price_sum)[-2:]}"
-    difference_sum = f"{str(difference_sum)[:-2]}.{str(difference_sum)[-2:]}"
-    final_price_sum = f"{str(final_price_sum)[:-2]}.{str(final_price_sum)[-2:]}"
+    starting_price_sum = add_decimal(starting_price_sum)
+    difference_sum = add_decimal(difference_sum)
+    final_price_sum = add_decimal(final_price_sum)
     receipt += f"Suma:    {starting_price_sum:>7} {'-' + difference_sum:>7} {final_price_sum:>7}\n"
     receipt += receipt_footer
     return receipt
@@ -150,14 +161,9 @@ def enter_product_menu():
     while True:
         print("Enter starting price (0 - Cancel)")
         # print("Wpisz cenę początkową (0 - Anuluj)")
+        starting_price = input("zł> ")
         try:
-            starting_price = input("zł> ")
-            if starting_price == "0":
-                raise RuntimeError
-            if "." in starting_price or "," in starting_price or "-" in starting_price:
-                starting_price = int(starting_price[:-3] + starting_price[-2:])
-            else:
-                starting_price = int(f"{int(starting_price)}00")
+            starting_price = remove_decimal(starting_price)
         except ValueError:
             print("\033[31mInvalid price\033[39m")
             # print("\033[31mNiepoprawna cena\033[39m")
@@ -188,10 +194,7 @@ def enter_product_menu():
             raise RuntimeError
         if value != "":
             try:
-                if "." in value or "," in value:
-                    final_price = int(value[:-3] + value[-2:])
-                else:
-                    final_price = int(f"{value}00")
+                final_price = remove_decimal(value)
             except ValueError:
                 print("\033[31mInvalid value\033[39m")
                 # print("\033[31mNiepoprawna wartość\033[39m")
@@ -309,4 +312,3 @@ if __name__ == "__main__":
 
         else:
             print("\033[31mInvalid option\033[39m")
-            # print("\033[31mNiepoprawna opcja\033[39m")
