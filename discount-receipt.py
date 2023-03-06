@@ -96,7 +96,7 @@ def save_receipt_as_txt(receipt, filename):
     with open(f"{getcwd()}/printed/{filename}", "w+") as file:
         file.write(receipt)
 
-def print_receipt_network_printer(receipt):
+def print_receipt_over_network(receipt):
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect(printer_ip)
@@ -271,7 +271,7 @@ if __name__ == "__main__":
             print("Confirm")
             # print("Potwierdź")
             if input("1> ") == "1":
-                print_receipt_network_printer(receipt)
+                print_receipt_over_network(receipt)
                 filename = now.strftime("%d_%m_%Y__%H_%M_%S")
                 save_receipt_as_txt(receipt, filename + ".txt")
                 save_logs(purchased_products, filename + ".csv")
@@ -298,7 +298,7 @@ if __name__ == "__main__":
                 else:
                     receipt = open(dir + files[index], "rb").read()
                     print(receipt)
-                    print_receipt_network_printer(receipt)
+                    print_receipt_over_network(receipt)
 
         elif option == "6":
             receipt = ""
@@ -308,7 +308,8 @@ if __name__ == "__main__":
                     break
                 else:
                     receipt += f"{line}\n"
-            print_receipt_network_printer(receipt)
+            print_receipt_over_network(receipt)
 
         else:
             print("\033[31mInvalid option\033[39m")
+            # print("\033[31mNiepoprawna opcja\033[39m")
