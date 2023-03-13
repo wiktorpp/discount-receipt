@@ -26,9 +26,9 @@ class Product:
         return f"Product({self.name}, {self.discount_percentage}, {starting_price}, {final_price})"
 
     def to_csv(self):
-        starting_price = f"{str(self.starting_price)[:-2]}_{str(self.starting_price)[-2:]}"
-        final_price = f"{str(self.final_price)[:-2]}_{str(self.final_price)[-2:]}"
-        return f"{self.name};{self.discount_percentage};{self.starting_price};{final_price}"
+        starting_price = add_decimal(self.starting_price)
+        final_price = add_decimal(self.final_price)
+        return f"{self.name};{self.discount_percentage}%;{starting_price};{final_price}"
 
 code_to_product = dict()
 svg = open(f"{getcwd()}/products.csv").read()
@@ -79,7 +79,7 @@ def generate_receipt(products, date="", preview=False):
             difference = add_decimal(difference)
         final_price_sum += product.final_price
         final_price = add_decimal(product.final_price)
-        receipt += f"         {starting_price:>7} {difference:>7} {'~' + final_price:>7}\n"
+        receipt += f"         {starting_price:>7} {difference:>7} {final_price:>7}\n"
     receipt += "--------------------------------\n"
     starting_price_sum = add_decimal(starting_price_sum)
     difference_sum = add_decimal(difference_sum)
@@ -308,3 +308,4 @@ if __name__ == "__main__":
 
         else:
             print("\033[31mInvalid option\033[39m")
+            # print("\033[31mNiepoprawna opcja\033[39m")
