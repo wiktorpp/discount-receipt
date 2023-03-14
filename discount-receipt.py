@@ -103,9 +103,9 @@ def print_using_rawbt(data):
         data = data + bytes(16)
         s.send(data)
         s.close()
-    except:
-        print("\033[31mPrinting error\033[39m")
-        # print("\033[31mBłąd drukowania\033[39m")
+    except Exception as e:
+        print(f"\033[31mPrinting error: {e}\033[39m")
+        # print(f"\033[31mBłąd drukowania: {e}\033[39m")
     else:
         print("Printing...")
         # print("Drukowanie...")
