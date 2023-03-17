@@ -7,6 +7,17 @@ receipt_footer = "       Zapraszamy ponownie\n"
 
 printer_ip = ("localhost", 9100)
 
+def add_decimal(integer):
+    return f"{str(integer)[:-2]}.{str(integer)[-2:]}"
+
+def remove_decimal(number):
+    if number == "0":
+        raise RuntimeError
+    if "." in number or "," in number or "-" in number:
+        return int(number[:-3] + number[-2:])
+    else:
+        return int(f"{int(number)}00")
+
 class Product:
     def __init__(
         self,
@@ -25,10 +36,23 @@ class Product:
         final_price = f"{str(self.final_price)[:-2]}_{str(self.final_price)[-2:]}"
         return f"Product({self.name}, {self.discount_percentage}, {starting_price}, {final_price})"
 
+    def generate_receipt_entry(self):
+        entry = f"{self.name:<19}{'~' + str(self.discount_percentage):>4}%\n"
+        difference = self.starting_price - self.final_price
+        if difference > 100:
+            difference = add_decimal(difference)
+        else:
+            difference = "0.00"
+        starting_price = add_decimal(self.starting_price)
+        final_price = add_decimal(self.final_price)
+        entry += f"         {starting_price:>7} {'-' + difference:>7} {final_price:>7}\n"
+        return entry
+
     def to_csv(self):
         starting_price = add_decimal(self.starting_price)
         final_price = add_decimal(self.final_price)
-        return f"{self.name};{self.discount_percentage}%;{starting_price};{final_price}"
+        f"{self.name};{self.discount_percentage}%;{starting_price};{final_price}"
+    
 
 code_to_product = dict()
 svg = open(f"{getcwd()}/products.csv").read()
@@ -47,16 +71,6 @@ for product in svg.splitlines():
     except ValueError:
         pass
 
-def add_decimal(integer):
-    return f"{str(integer)[:-2]}.{str(integer)[-2:]}"
-
-def remove_decimal(number):
-    if number == "0":
-        raise RuntimeError
-    if "." in number or "," in number or "-" in number:
-        return int(number[:-3] + number[-2:])
-    else:
-        return int(f"{int(number)}00")
 
 def generate_receipt(products, date="", preview=False):
     receipt=receipt_header
@@ -67,19 +81,10 @@ def generate_receipt(products, date="", preview=False):
     for index, product in enumerate(products):
         if preview:
             receipt += f"            Nr. {index}\n"
-        starting_price = add_decimal(product.starting_price)
         starting_price_sum += product.starting_price
-        discount_percentage = str(product.discount_percentage)
-        receipt += f"{product.name:<19}{'~' + discount_percentage:>4}%\n"
-        if discount_percentage == "0":
-            difference = "-0.00"
-        else:
-            difference = product.starting_price - product.final_price
-            difference_sum += difference
-            difference = add_decimal(difference)
+        difference_sum += product.starting_price - product.final_price
         final_price_sum += product.final_price
-        final_price = add_decimal(product.final_price)
-        receipt += f"         {starting_price:>7} {difference:>7} {final_price:>7}\n"
+        receipt += product.generate_receipt_entry()
     receipt += "--------------------------------\n"
     starting_price_sum = add_decimal(starting_price_sum)
     difference_sum = add_decimal(difference_sum)
@@ -167,11 +172,9 @@ def enter_product_menu():
         else:
             break
     while True:
-        print("Enter discount (0 - Cancel)")
-        # Print("Wpisz zniszkę (0 - Anuluj)")
+        print("Enter discount")
+        # Print("Wpisz zniszkę")
         value = input(f"{discount_percentage}%> ")
-        if value == "0":
-            raise RuntimeError
         if value != "":
             try:
                 discount_percentage = int(value)
